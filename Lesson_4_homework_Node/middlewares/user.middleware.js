@@ -1,12 +1,47 @@
-const User = require('../dataBase/User');
-const userValidator = require('../validators/user.validator');
+const {findUser, findUserById, findByEmail} = require('../service/userService');
+const {createUserValidator, updateUserValidator} = require('../validators/user.validator');
 
 module.exports = {
-    createUserMiddleware: async (req, res, next) => {
+    allUser: async (req, res, next) => {
         try {
-            const userByEmail = await User.findOne({ email: req.body.email });
+            const user = await findUser().lean();
 
-            if (userByEmail) {
+            if (!user) {
+                throw new Error('No user');
+            }
+
+            req.user = user;
+
+            next();
+        } catch (e) {
+            res.json(e.message);
+        }
+    },
+    user: async (req, res, next) => {
+        try {
+            const {user_id} = req.params;
+
+            const user = await findUserById(user_id).lean();
+
+            if (!user) {
+                throw new Error('No user');
+            }
+
+            req.user = user;
+
+            next();
+        } catch (e) {
+            res.json(e.message);
+        }
+    },
+
+    checkUniqueEmail: async (req, res, next) => {
+        try {
+            const {email} = req.body;
+
+            const userEmail = await findByEmail(email);
+
+            if (userEmail) {
                 throw new Error('Email already exist');
             }
 
@@ -16,19 +51,31 @@ module.exports = {
         }
     },
 
-    isUserBodyValid: (req, res, next) => {
+    validateUser: (req, res, next) => {
         try {
-            const { error, value } = userValidator.createUserValidator.validate(req.body);
+            const {error} = createUserValidator.validate(req.body);
 
             if (error) {
-                throw new Error(error.details[0].message);
+                throw new Error('Can not validate');
             }
-
-            req.body = value;
 
             next();
         } catch (e) {
             res.json(e.message);
         }
-    }
+    },
+
+    validateUserToUpdate: (req, res, next) => {
+        try {
+            const {error} = updateUserValidator.validate(req.body);
+
+            if (error) {
+                throw new Error('Can not validate');
+            }
+
+            next();
+        } catch (e) {
+            res.json(e.message);
+        }
+    },
 };
