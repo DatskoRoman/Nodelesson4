@@ -1,81 +1,75 @@
-const {findUser, findUserById, findByEmail} = require('../service/userService');
-const {createUserValidator, updateUserValidator} = require('../validators/user.validator');
+const User = require('../dataBase/User');
+const userValidator = require('../validators/user.validator');
+const ErrorHandler = require('../errors/ErrorHandler');
 
 module.exports = {
-    allUser: async (req, res, next) => {
+    createUserMiddleware: async (req, res, next) => {
         try {
-            const user = await findUser().lean();
+            const userByEmail = await User.findOne({ email: req.body.email });
 
-            if (!user) {
-                throw new Error('No user');
-            }
-
-            req.user = user;
-
-            next();
-        } catch (e) {
-            res.json(e.message);
-        }
-    },
-    user: async (req, res, next) => {
-        try {
-            const {user_id} = req.params;
-
-            const user = await findUserById(user_id).lean();
-
-            if (!user) {
-                throw new Error('No user');
-            }
-
-            req.user = user;
-
-            next();
-        } catch (e) {
-            res.json(e.message);
-        }
-    },
-
-    checkUniqueEmail: async (req, res, next) => {
-        try {
-            const {email} = req.body;
-
-            const userEmail = await findByEmail(email);
-
-            if (userEmail) {
-                throw new Error('Email already exist');
+            if (userByEmail) {
+                return next({
+                    message: 'Email already exist',
+                    status: 404
+                });
             }
 
             next();
         } catch (e) {
-            res.json(e.message);
+            next(e);
         }
     },
 
-    validateUser: (req, res, next) => {
+    isUserPresent: async (req, res, next) => {
         try {
-            const {error} = createUserValidator.validate(req.body);
+            const userByEmail = await User
+                .findOne({ email: req.body.email })
+                .select('+password')
+                .lean();
+
+            if (!userByEmail) {
+                throw new ErrorHandler('Wrong meail or password', 418);
+            }
+
+            req.user = userByEmail;
+
+            next();
+        } catch (e) {
+            next(e);
+        }
+    },
+
+    isUserBodyValid: (req, res, next) => {
+        try {
+            const { error, value } = userValidator.createUserValidator.validate(req.body);
 
             if (error) {
-                throw new Error('Can not validate');
+                throw new Error(error.details[0].message);
             }
+
+            req.body = value;
 
             next();
         } catch (e) {
-            res.json(e.message);
+            next(e);
         }
     },
 
-    validateUserToUpdate: (req, res, next) => {
+    checkUserRole: (roleArr = []) => (req, res, next) => {
         try {
-            const {error} = updateUserValidator.validate(req.body);
+            const { role } = req.user;
 
-            if (error) {
-                throw new Error('Can not validate');
+            console.log('_____________________________________');
+            console.log(role);
+            console.log('_____________________________________');
+
+            if (!roleArr.includes(role)) {
+                throw new Error('Access denied');
             }
 
             next();
         } catch (e) {
-            res.json(e.message);
+            next(e);
         }
     },
 };

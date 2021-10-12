@@ -1,35 +1,20 @@
-const {login} = require('../validators/auth.validator');
-const {findByEmail} = require('../service/userService');
+const passwordSerivce = require('../service/password.service');
 
 module.exports = {
-    userValidate: (req, res, next) => {
+    isPasswordsMatched: async (req, res, next) => {
         try {
-            const {error} = login.validate(req.body);
+            const { password } = req.body;
+            const { password: hashPassword } = req.user;
 
-            if (error) {
-                throw new Error('Error');
-            }
+            console.log('___________________________');
+            console.log(password);
+            console.log('___________________________');
+
+            await passwordSerivce.compare(password, hashPassword);
 
             next();
         } catch (e) {
-            res.json(e.message);
+            next(e);
         }
-    },
-
-    emailExist: async (req, res, next) => {
-        try {
-            const {email} = req.body;
-
-            const userEmail = await findByEmail(email);
-
-            if (!userEmail) {
-                throw new Error('Email already exist');
-            }
-
-            req.user = userEmail;
-            next();
-        } catch (e) {
-            res.json(e.message);
-        }
-    },
+    }
 };
