@@ -1,5 +1,5 @@
 const User = require('../dataBase/User');
-const {hash} = require('../service/password.service');
+const passwordService = require('../service/password.service');
 const {userNormalizator} = require('../util/user.util');
 
 module.exports = {
@@ -39,7 +39,7 @@ module.exports = {
 
     createUser: async (req, res) => {
         try {
-            const hashPassword = await hash(req.body.password);
+            const hashPassword = await passwordService.hash(req.body.password);
 
             await User.create({...req.body, password: hashPassword});
 

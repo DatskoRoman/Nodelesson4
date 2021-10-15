@@ -7,7 +7,7 @@ module.exports = {
             const {error} = login.validate(req.body);
 
             if (error) {
-                throw new Error('Error');
+                throw new Error('Wrong email or password');
             }
 
             next();

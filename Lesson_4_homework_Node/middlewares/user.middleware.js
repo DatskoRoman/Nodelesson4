@@ -6,10 +6,6 @@ module.exports = {
         try {
             const user = await findUser().lean();
 
-            if (!user) {
-                throw new Error('No user');
-            }
-
             req.user = user;
 
             next();

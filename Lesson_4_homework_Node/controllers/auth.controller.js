@@ -1,15 +1,15 @@
 const {compare} = require('../service/password.service');
 
 module.exports = {
-    login: async (req, res, next) => {
+    login: async (req, res) => {
         try {
-            const {body: {password}, user} = req;
+            const {body: {password, hashPassword}, user} = req;
 
-            await compare(user.password, password);
+            await compare(user.password, password, hashPassword);
 
             res.redirect('/users');
         } catch (e) {
-            next(e);
+            res.json(e.message);
         }
     },
 };
