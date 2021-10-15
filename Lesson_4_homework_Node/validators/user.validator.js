@@ -34,6 +34,5 @@ const updateUserValidator = Joi.object({
         .max(30)
         .trim(),
 
-    email: Joi.string().trim()
 });
 module.exports = {createUserValidator, updateUserValidator};
