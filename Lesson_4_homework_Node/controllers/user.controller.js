@@ -40,11 +40,12 @@ module.exports = {
 
     createUser: async (req, res) => {
         try {
+            const {name} = req.body;
             const hashPassword = await passwordService.hash(req.body.password);
 
             await User.create({...req.body, password: hashPassword});
 
-            res.end('User is added');
+            res.end(`User ${name} is added`);
         } catch (e) {
             res.json(e.message);
         }
