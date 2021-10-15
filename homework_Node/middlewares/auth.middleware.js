@@ -1,5 +1,7 @@
 const {login} = require('../validators/auth.validator');
 const {findByEmail} = require('../service/userService');
+const {ErrorHandler} = require("../errors");
+const {notValidBody, badRequest} = require("../errors/dev-errors");
 
 module.exports = {
     userValidate: (req, res, next) => {
@@ -7,7 +9,7 @@ module.exports = {
             const {error} = login.validate(req.body);
 
             if (error) {
-                throw new Error('Wrong email or password');
+                throw new ErrorHandler(notValidBody.message, notValidBody.code);
             }
 
             next();
@@ -23,7 +25,7 @@ module.exports = {
             const userEmail = await findByEmail(email);
 
             if (!userEmail) {
-                throw new Error('Email already exist');
+                throw new ErrorHandler(badRequest.message, badRequest.code);
             }
 
             req.user = userEmail;

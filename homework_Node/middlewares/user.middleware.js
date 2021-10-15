@@ -1,5 +1,7 @@
 const {findUser, findUserById, findByEmail} = require('../service/userService');
 const {createUserValidator, updateUserValidator} = require('../validators/user.validator');
+const {ErrorHandler} = require("../errors");
+const {badRequest, Forbidden, notValidBody, notFoundById} = require("../errors/dev-errors");
 
 module.exports = {
     allUser: async (req, res, next) => {
@@ -13,14 +15,14 @@ module.exports = {
             res.json(e.message);
         }
     },
-    user: async (req, res, next) => {
+    userById: async (req, res, next) => {
         try {
             const {user_id} = req.params;
 
             const user = await findUserById(user_id).lean();
 
             if (!user) {
-                throw new Error('No user');
+                throw new ErrorHandler(notFoundById.message, notFoundById.code);
             }
 
             req.user = user;
@@ -38,7 +40,7 @@ module.exports = {
             const userEmail = await findByEmail(email);
 
             if (userEmail) {
-                throw new Error('Email already exist');
+                throw new ErrorHandler(badRequest.message, badRequest.code);
             }
 
             next();
@@ -52,7 +54,7 @@ module.exports = {
             const {error} = createUserValidator.validate(req.body);
 
             if (error) {
-                throw new Error('Can not validate');
+                throw new ErrorHandler(notValidBody.message, notValidBody.code);
             }
 
             next();
@@ -66,7 +68,7 @@ module.exports = {
             const {error} = updateUserValidator.validate(req.body);
 
             if (error) {
-                throw new Error('Can not validate');
+                throw new ErrorHandler(notValidBody.message, notValidBody.code);
             }
 
             next();
@@ -74,4 +76,18 @@ module.exports = {
             res.json(e.message);
         }
     },
+
+    checkUserRole: (roleArr = []) => (req, res, next) => {
+        try {
+            const {role} = req.user;
+
+            if (!roleArr.includes(role)) {
+                throw new ErrorHandler(Forbidden.message, Forbidden.code);
+            }
+
+            next();
+        } catch (e) {
+            next(e);
+        }
+    }
 };
