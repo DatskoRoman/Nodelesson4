@@ -2,11 +2,7 @@ const router = require('express').Router();
 
 const {getUsers, createUser, getUserById, updateUser, deleteUser} = require('../controllers/user.controller');
 const {
-    allUser,
-    validateUser,
-    checkUniqueEmail,
-    user,
-    validateUserToUpdate,
+    allUser, validateUser, checkUniqueEmail, user, validateUserToUpdate,
 } = require('../middlewares/user.middleware');
 
 router.get('/', allUser, getUsers);
