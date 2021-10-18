@@ -24,13 +24,16 @@ module.exports = {
 
     checkUniqueEmail: async (req, res, next) => {
         try {
-            const {email} = req.body;
 
-            const userEmail = await findByEmail(email);
+            const userEmail = await findByEmail({ email: req.body.email })
+                .select('+password')
+                .lean();
 
-            if (userEmail) {
+            if (!userEmail) {
                 throw new ErrorHandler(notValidBody.message, notValidBody.code);
             }
+
+            req.user = userEmail;
 
             next();
         } catch (e) {

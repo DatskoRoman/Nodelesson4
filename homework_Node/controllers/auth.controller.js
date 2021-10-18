@@ -1,15 +1,38 @@
-const {compare} = require('../service/password.service');
+const User = require('../dataBase/User');
+const O_Auth = require('../dataBase/O_Auth');
+const { userNormalizator } = require('../util/user.util');
+const { jwtService } = require('../service');
 
 module.exports = {
-    login: async (req, res) => {
+    login: async (req, res, next) => {
         try {
-            const {body: {password, hashPassword}, user} = req;
+            const { user } = req;
 
-            await compare(user.password, password, hashPassword);
+            const tokenPair = jwtService.generateTokenPair();
 
-            res.redirect('/users');
+            const userNormalized = userNormalizator(user);
+
+            await O_Auth.create({
+                ...tokenPair,
+                user_id: userNormalized._id
+            });
+
+            res.json({
+                user: userNormalized,
+                ...tokenPair
+            });
         } catch (e) {
-            res.json(e.message);
+            next(e);
+        }
+    },
+
+    logout: async (req, res, next) => {
+        try {
+            const users = await User.find();
+
+            res.json(users);
+        } catch (e) {
+            next(e);
         }
     },
 };
