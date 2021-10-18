@@ -1,10 +1,11 @@
-const router = require('express').Router();
+const router = require('express')
+    .Router();
 
 const userMiddleware = require('../middlewares/user.middleware');
-const {userRoles} = require("../configs");
-const {userController} = require("../controllers");
+const {userRoles} = require('../configs');
+const {userController} = require('../controllers');
 
-router.get('/', userMiddleware.allUser, userController.getUsers);
+router.get('/', userController.getUsers);
 
 router.post('/', userMiddleware.validateUser, userMiddleware.checkUniqueEmail, userController.createUser);
 
@@ -14,8 +15,8 @@ router.put('/:user_id', userMiddleware.validateUserToUpdate, userMiddleware.user
 
 router.delete('/:user_id', userMiddleware.userById, userController.deleteUser,
     userMiddleware.checkUserRole([
-    userRoles.USER,
-    userRoles.ADMIN
-]));
+        userRoles.USER,
+        userRoles.ADMIN
+    ]));
 
 module.exports = router;

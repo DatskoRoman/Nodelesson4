@@ -9,7 +9,7 @@ module.exports = {
         code: 400
     },
 
-    Forbidden: {
+    FORBIDDEN: {
         message: 'Access denied',
         code: 403
     },

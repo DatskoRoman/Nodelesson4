@@ -1,7 +1,7 @@
 const {login} = require('../validators/auth.validator');
 const {findByEmail} = require('../service/userService');
-const {ErrorHandler} = require("../errors");
-const {notValidBody, badRequest} = require("../errors/dev-errors");
+const {ErrorHandler} = require('../errors');
+const {notValidBody, badRequest} = require('../errors/dev-errors');
 
 module.exports = {
     userValidate: (req, res, next) => {

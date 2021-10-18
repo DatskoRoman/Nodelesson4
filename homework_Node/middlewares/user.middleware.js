@@ -1,20 +1,9 @@
-const {findUser, findUserById, findByEmail} = require('../service/userService');
+const {findUserById, findByEmail} = require('../service/userService');
 const {createUserValidator, updateUserValidator} = require('../validators/user.validator');
-const {ErrorHandler} = require("../errors");
-const {badRequest, Forbidden, notValidBody, notFoundById} = require("../errors/dev-errors");
+const {ErrorHandler} = require('../errors');
+const {FORBIDDEN, notValidBody, notFoundById} = require('../errors/dev-errors');
 
 module.exports = {
-    allUser: async (req, res, next) => {
-        try {
-            const user = await findUser().lean();
-
-            req.user = user;
-
-            next();
-        } catch (e) {
-            res.json(e.message);
-        }
-    },
     userById: async (req, res, next) => {
         try {
             const {user_id} = req.params;
@@ -29,7 +18,7 @@ module.exports = {
 
             next();
         } catch (e) {
-            res.json(e.message);
+            next(e);
         }
     },
 
@@ -40,12 +29,12 @@ module.exports = {
             const userEmail = await findByEmail(email);
 
             if (userEmail) {
-                throw new ErrorHandler(badRequest.message, badRequest.code);
+                throw new ErrorHandler(notValidBody.message, notValidBody.code);
             }
 
             next();
         } catch (e) {
-            res.json(e.message);
+            next(e);
         }
     },
 
@@ -59,7 +48,7 @@ module.exports = {
 
             next();
         } catch (e) {
-            res.json(e.message);
+            next(e);
         }
     },
 
@@ -73,7 +62,7 @@ module.exports = {
 
             next();
         } catch (e) {
-            res.json(e.message);
+            next(e);
         }
     },
 
@@ -82,7 +71,7 @@ module.exports = {
             const {role} = req.user;
 
             if (!roleArr.includes(role)) {
-                throw new ErrorHandler(Forbidden.message, Forbidden.code);
+                throw new ErrorHandler(FORBIDDEN.message, FORBIDDEN.code);
             }
 
             next();

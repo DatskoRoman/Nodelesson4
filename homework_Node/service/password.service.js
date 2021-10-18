@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
-const {ErrorHandler} = require("../errors");
-const {notValidBody} = require("../errors/dev-errors");
+const {ErrorHandler} = require('../errors');
+const {notValidBody} = require('../errors/dev-errors');
 
 module.exports = {
     hash: (password) => bcrypt.hash(password, 10),
