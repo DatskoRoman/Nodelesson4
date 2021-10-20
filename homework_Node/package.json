@@ -8,7 +8,10 @@
     "joi": "^17.4.2",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.0.11",
-    "pm2": "^5.1.2"
+    "pm2": "^5.1.2",
+    "email-templates": "^8.0.8",
+    "nodemailer": "^6.7.0",
+    "pug": "^3.0.2"
   },
   "devDependencies": {
     "eslint": "^7.32.0",
@@ -16,7 +19,9 @@
     "eslint-plugin-node": "^11.1.0",
     "husky": "^4.3.0",
     "lint-staged": "^11.2.0",
-    "@types/jsonwebtoken": "^8.5.5"
+    "@types/jsonwebtoken": "^8.5.5",
+    "@types/email-templates": "^8.0.4",
+    "@types/nodemailer": "^6.4.4"
   },
   "husky": {
     "hooks": {

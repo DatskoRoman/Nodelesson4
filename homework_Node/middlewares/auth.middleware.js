@@ -5,7 +5,7 @@ const {notValidBody, badRequest} = require('../errors/dev-errors');
 const {AUTHORIZATION} = require('../configs/constants');
 const O_Auth = require('../dataBase/O_Auth');
 const tokenTypeEnum = require('../configs/token-type.enum');
-const {jwtService} = require('../service');
+const {jwtService, passwordService} = require('../service');
 
 module.exports = {
     userValidate: (req, res, next) => {
@@ -36,6 +36,19 @@ module.exports = {
             next();
         } catch (e) {
             res.json(e.message);
+        }
+    },
+
+    isPasswordsMatched: async (req, res, next) => {
+        try {
+            const { password } = req.body;
+            const { password: hashPassword } = req.user;
+
+            await passwordService.compare(password, hashPassword);
+
+            next();
+        } catch (e) {
+            next(e);
         }
     },
 

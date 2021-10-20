@@ -40,12 +40,13 @@ module.exports = {
 
     createUser: async (req, res, next) => {
         try {
-            const {name} = req.body;
             const hashPassword = await passwordService.hash(req.body.password);
 
-            await User.create({...req.body, password: hashPassword});
+            await emailService.sendMail(req.body.email, WELCOME, { userName: req.body.name });
 
-            res.end(`User ${name} is added`);
+            const newUser =await User.create({...req.body, password: hashPassword});
+
+            res.end(`User ${newUser} is added`);
         } catch (e) {
             next(e);
         }
