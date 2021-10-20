@@ -1,6 +1,8 @@
 const User = require('../dataBase/User');
 const passwordService = require('../service/password.service');
 const userUtil = require('../util/user.util');
+const {emailService} = require('../service');
+const {WELCOME} = require('../configs/email-action.enum');
 
 
 module.exports = {
@@ -17,10 +19,10 @@ module.exports = {
 
     getUserById: (req, res, next) => {
         try {
-            let user = req.user;
-            user = userUtil.userNormalizator(user);
+            const user = req.user;
+            const utilUser = userUtil.userNormalizator(user);
 
-            res.json({user});
+            res.json(utilUser);
         } catch (e) {
             next(e);
         }
@@ -40,13 +42,17 @@ module.exports = {
 
     createUser: async (req, res, next) => {
         try {
-            const hashPassword = await passwordService.hash(req.body.password);
+            const newUser = req.body;
 
-            await emailService.sendMail(req.body.email, WELCOME, { userName: req.body.name });
+            const hashedPassword = await passwordService.hash(newUser.password);
 
-            const newUser =await User.create({...req.body, password: hashPassword});
+            const user = await User.create({ ...newUser, password: hashedPassword });
 
-            res.end(`User ${newUser} is added`);
+            const utilUser = userUtil.userNormalizator(user.toObject());
+
+            await emailService.sendMail(newUser.email, WELCOME, utilUser);
+
+            res.end(`User ${utilUser} is added`);
         } catch (e) {
             next(e);
         }

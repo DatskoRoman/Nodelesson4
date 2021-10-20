@@ -14,7 +14,7 @@ module.exports = {
                 throw new ErrorHandler(notFoundById.message, notFoundById.code);
             }
 
-            req.user = user;
+            req.userById() = user;
 
             next();
         } catch (e) {

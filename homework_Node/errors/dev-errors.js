@@ -22,5 +22,20 @@ module.exports = {
     notFoundById: {
         message: 'User with this id does not exist',
         code: 404
-    }
+    },
+
+    ok: {
+        message: 'Ok',
+        code: 200
+    },
+
+    create: {
+        message: 'Create user',
+        code: 201
+    },
+
+    accepted: {
+        message: 'accepted for user',
+        code: 200
+    },
 };
