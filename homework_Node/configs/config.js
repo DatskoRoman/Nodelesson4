@@ -7,6 +7,6 @@ module.exports = {
     JWT_ACTION_SECRET: process.env.JWT_ACTION_SECRET || 'actionSecretWord',
 
 
-    NO_REPLY_EMAIL_PASSWORD: process.env.NO_REPLY_EMAIL_PASSWORD,
-    NO_REPLY_EMAIL: process.env.NO_REPLY_EMAIL,
+    NO_REPLY_EMAIL: process.env.NO_REPLY_EMAIL || 'email@gmail.com',
+    NO_REPLY_PASSWORD: process.env.NO_REPLY_PASSWORD || '1234567890'
 };

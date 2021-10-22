@@ -1,29 +1,29 @@
 const express = require('express');
 const mongoose = require('mongoose');
 
-require('dotenv')
-    .config();
+require('dotenv').config();
 
 const {MONGO_CONNECT_URL, PORT} = require('./configs/config');
-const userRouter = require('./routes/user.router');
-const authRouter = require('./routes/auth.router');
-
-const app = express();
+const {authRouter, userRouter,passwordRouter} = require('./routers');
+const {GENERIC_ERROR}=require('./errors/status-enum');
 
 mongoose.connect(MONGO_CONNECT_URL);
 
+const app = express();
+
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded());
 
-app.use('/auth', authRouter);
 app.use('/users', userRouter);
-
-app.use('*', (err, req, res) => {
+app.use('/auth', authRouter);
+app.use('/password', passwordRouter);
+// eslint-disable-next-line no-unused-vars
+app.use('*', (err, req, res, next) => {
     res
-        .status(err.status || 500)
-        .json({msg: err.message});
+        .status(err.status || GENERIC_ERROR)
+        .json({message: err.message});
 });
 
 app.listen(PORT, () => {
-    console.log(`App Listen ${PORT}`);
+    console.log(`App listen ${PORT}`);
 });

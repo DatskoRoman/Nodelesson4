@@ -1,13 +1,7 @@
 const {model, Schema} = require('mongoose');
 
-const oAuth = new Schema({
-    access_token: {
-        type: String,
-        trim: true,
-        required: true
-    },
-
-    refresh_token: {
+const Action = new Schema({
+    action_token: {
         type: String,
         trim: true,
         required: true
@@ -18,7 +12,13 @@ const oAuth = new Schema({
         trim: true,
         required: true,
         ref: 'user'
+    },
+
+    type_action_token: {
+        type: String,
+        trim: true,
+        required: true
     }
 });
 
-module.exports = model('o_auth', oAuth);
+module.exports = model('action', Action);

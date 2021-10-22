@@ -1,29 +1,20 @@
-const {User, Oauth, ActionToken} = require('../dataBase/index');
-const {errorMessages, errorStatuses} = require('../errors');
-const {passwordService, jwtService} = require('../service');
+const {User, OAuth} = require('../dataBase');
+const {authValidators: {authValidator}} = require('../validators');
+const {passwordService: {comparing}} = require('../services');
+const {messagesEnum, statusEnum, ErrorHandler: {ErrorHandler}} = require('../errors');
+const {jwtService} = require('../services');
 const {AUTHORIZATION} = require('../configs/constants');
-const {tokenTypeEnum} = require('../configs');
-
 
 module.exports = {
-    isEmailExist: async (req, res, next) => {
+    isAuthValid: (req, res, next) => {
         try {
-            const {body: {email}} = req;
+            const {error, value} = authValidator.validate(req.body);
 
-            const userById = await User.findOne({email})
-                .select('+password')
-                .lean();
-
-            if (!userById) {
-                next({
-                    message: errorMessages.WRONG_EMAIL_OR_PASSWORD,
-                    status: errorStatuses.status_400
-                });
-
-                return;
+            if (error) {
+                throw new ErrorHandler(error.details[0].message, 400);
             }
 
-            req.userById = userById;
+            req.body = value;
 
             next();
         } catch (e) {
@@ -31,11 +22,32 @@ module.exports = {
         }
     },
 
-    isPasswordMatched: async (req, res, next) => {
+    checkLogin: async (req, res, next) => {
         try {
-            const {body, userById} = req;
+            const {email, password} = req.body;
 
-            await passwordService.compare(body.password, userById.password);
+            const user = await User.findOne({email}).lean();
+
+            if (!user) {
+                throw new ErrorHandler(messagesEnum.WRONG_LOGIN_OR_PASS, statusEnum.BAD_REQUEST);
+            }
+
+            await comparing(password, user.password);
+
+            req.user = user;
+
+            next();
+        } catch (e) {
+            next(e);
+        }
+    },
+
+    checkingRole: (roleArr = []) => (req, res, next) => {
+        try {
+
+            if (!roleArr.includes(req.body.role)) {
+                throw new ErrorHandler(messagesEnum.ACCESS_DENIED, statusEnum.FORBIDDEN);
+            }
 
             next();
         } catch (e) {
@@ -48,26 +60,18 @@ module.exports = {
             const token = req.get(AUTHORIZATION);
 
             if (!token) {
-                return next({
-                    message: errorMessages.INVALID_TOKEN,
-                    status: errorStatuses.status_401
-                });
+                throw new ErrorHandler(messagesEnum.ACCESS_DENIED, statusEnum.FORBIDDEN);
             }
 
-            jwtService.verifyToken(token, tokenTypeEnum.ACCESS);
+            jwtService.verifyToken(token);
 
-            const foundO_Auth = await Oauth
-                .findOne({token_access: token})
-                .populate('user');
+            const tokenResponse = await OAuth.findOne({access_token: token}).populate('user_id');
 
-            if (!foundO_Auth) {
-                return next({
-                    message: errorMessages.INVALID_TOKEN,
-                    status: errorStatuses.status_401
-                });
+            if (!tokenResponse) {
+                throw new ErrorHandler(messagesEnum.INVALID_TOKEN, statusEnum.UNAUTHORIZED);
             }
 
-            req.userById = foundO_Auth.user;
+            req.user = tokenResponse.user_id;
 
             next();
         } catch (e) {
@@ -80,62 +84,20 @@ module.exports = {
             const token = req.get(AUTHORIZATION);
 
             if (!token) {
-                return next({
-                    message: errorMessages.INVALID_TOKEN,
-                    status: errorStatuses.status_401
-                });
+                throw new ErrorHandler(messagesEnum.INVALID_TOKEN, statusEnum.UNAUTHORIZED);
             }
 
-            jwtService.verifyToken(token, tokenTypeEnum.REFRESH);
+            jwtService.verifyToken(token, 'refresh');
 
-            const foundO_Auth = await Oauth
-                .findOne({token_refresh: token})
-                .populate('user');
+            const tokenResponse = await OAuth.findOne({refresh_token: token}).populate('user_id');
 
-            if (!foundO_Auth) {
-                return next({
-                    message: errorMessages.INVALID_TOKEN,
-                    status: errorStatuses.status_401
-                });
+            if (!tokenResponse) {
+                throw new ErrorHandler(messagesEnum.INVALID_TOKEN, statusEnum.UNAUTHORIZED);
             }
 
-            await Oauth.deleteOne({token_refresh: token});
+            await OAuth.deleteOne({refresh_token: token});
 
-            req.userById = foundO_Auth.user;
-
-            next();
-        } catch (e) {
-            next(e);
-        }
-    },
-
-    checkActionToken: async (req, res, next) => {
-        try {
-            const token = req.get(AUTHORIZATION);
-
-            if (!token) {
-                return next({
-                    message: errorMessages.INVALID_TOKEN,
-                    status: errorStatuses.status_401
-                });
-            }
-
-            jwtService.verifyToken(token, tokenTypeEnum.ACTION);
-
-            const foundActionToken = await ActionToken
-                .findOne({token_action: token})
-                .populate('user');
-
-            if (!foundActionToken) {
-                return next({
-                    message: errorMessages.INVALID_TOKEN,
-                    status: errorStatuses.status_401
-                });
-            }
-
-            await ActionToken.deleteOne({token_action: token});
-
-            req.userById = foundActionToken.user;
+            req.user = tokenResponse.user_id;
 
             next();
         } catch (e) {
@@ -143,3 +105,4 @@ module.exports = {
         }
     }
 };
+

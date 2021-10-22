@@ -1,29 +1,38 @@
-const {Schema, model} = require('mongoose');
+const {model, Schema} = require('mongoose');
 
-const userRoles = require('../configs/user-roles.enum');
+const {userRole: {ADMIN, MANAGER, USER}} = require('../configs');
 
-const userSchema = new Schema({
+const User = new Schema({
     name: {
         type: String,
-        required: true,
-        trim: true
+        trim: true,
+        required: true
     },
+
     email: {
         type: String,
         unique: true,
-        required: true,
-        trim: true
+        trim: true,
+        required: true
     },
+
     password: {
         type: String,
-        required: true,
         trim: true,
+        required: true
     },
+
     role: {
         type: String,
-        default: userRoles.USER,
-        enum: Object.values(userRoles)
+        trim: true,
+        required: true,
+        default: 'user',
+        enum: [
+            ADMIN,
+            MANAGER,
+            USER
+        ]
     }
-}, {timestamps: true});
+});
 
-module.exports = model('user', userSchema);
+module.exports = model('user', User);

@@ -1,114 +1,50 @@
-const { userNormalizator } = require('../util/user.util');
-const { jwtService, emailService, passwordService} = require('../service');
-const {errorStatuses} = require('../errors');
-const {ActionToken, Oauth, User} = require('../dataBase');
-const {emailActionEnum} = require('../configs');
+const {OAuth} = require('../dataBase');
+const {statusEnum} = require('../errors');
+const {jwtService: {generateToken}} = require('../services');
+const {userNormalizator} = require('../util/user.util');
 
 module.exports = {
-    login: async (req, res, next) => {
+    login: async (req, res) => {
         try {
-            const { userById } = req;
+            const {user} = req;
 
-            const tokenPair = jwtService.generateTokenPair();
+            const tokenPair = generateToken();
 
-            const userNormalized = userNormalizator(userById);
+            const newUser = userNormalizator(user);
 
-            await Oauth.create({
-                ...tokenPair,
-                user: userById._id
-            });
+            await OAuth.create({...tokenPair, user_id: newUser._id});
 
-            res.json({
-                user: userNormalized,
-                ...tokenPair
-            });
+            res.json({user: newUser, ...tokenPair}).status(statusEnum.CREATED);
         } catch (e) {
-            next(e);
+            res.json(e.message);
         }
     },
 
-    logout: async ( req, res, next ) => {
+    logout: async (req, res) => {
         try {
-            const {userByID} = req;
+            const {user} = req;
 
-            await Oauth.deleteOne({ user: userByID._id });
+            await OAuth.deleteOne({user_id: user._id});
 
-            res.sendStatus(errorStatuses.status_205);
+            res.end();
         } catch (e) {
-            next(e);
+            res.json(e.message);
         }
     },
 
-    refresh: async (req, res, next) => {
+    refresh: async (req, res) => {
         try {
-            const {userByID} = req;
+            const {user} = req;
 
-            const tokenPair = jwtService.generateTokenPair();
+            const tokenRefreshPair = generateToken();
 
-            await Oauth.create({
-                ...tokenPair,
-                user: userByID._id
-            });
+            const newUser = userNormalizator(user);
 
-            res.json({
-                user: userByID,
-                ...tokenPair
-            });
-        } catch (err) {
-            next(err);
-        }
-    },
+            await OAuth.findByIdAndUpdate({user_id: newUser._id}, {...tokenRefreshPair});
 
-    forgotPassword: async (req, res, next) => {
-        try {
-            const {userByID: {_id, name, email}} = req;
-
-            const actionToken = await jwtService.generateTokenAction();
-
-            await ActionToken.create({
-                actionToken,
-                user: _id
-            });
-
-            const forgotPasswordLink= `http://localhost:5000/auth/forgot-password/${actionToken}`;
-
-            await emailService.sendMail(
-                email,
-                emailActionEnum.FORGOT_PASSWORD,
-                {
-                    userName: name,
-                    link: forgotPasswordLink
-                }
-            );
-
-            res.sendStatus(errorStatuses.status_201);
-        } catch (err) {
-            next(err);
-        }
-    },
-
-    changePassword: async (req, res, next) => {
-        try {
-            const {body: {password}, userByID: {_id, name, email}} = req;
-
-            const hashedPassword = await passwordService.hash(password);
-
-            await Oauth.deleteMany({user: _id});
-
-            await User.updateOne(
-                {_id},
-                {password: hashedPassword}
-            );
-
-            await emailService.sendMail(
-                email,
-                emailActionEnum.CHANGE_PASSWORD,
-                {userName: name}
-            );
-
-            res.sendStatus(errorStatuses.status_201);
-        } catch (err) {
-            next(err);
+            res.json({user: newUser, ...tokenRefreshPair}).status(statusEnum.CREATED);
+        } catch (e) {
+            res.json(e.message);
         }
     }
 };
