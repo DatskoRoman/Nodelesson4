@@ -6,12 +6,13 @@ const login = Joi.object({
     password: Joi
         .string()
         .regex(PASSWORD_REGEXP)
-        .trim()
+        .min(6)
         .required(),
 
     email: Joi
         .string()
         .regex(EMAIL_REGEXP)
+        .lowercase()
         .trim()
         .required(),
 });

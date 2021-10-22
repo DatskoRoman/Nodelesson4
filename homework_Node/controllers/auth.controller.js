@@ -1,23 +1,22 @@
-const O_Auth = require('../dataBase/O_Auth');
 const { userNormalizator } = require('../util/user.util');
-const { jwtService, emailService} = require('../service');
-const {LOGIN, LOGOUT} = require('../configs/email-action.enum');
+const { jwtService, emailService, passwordService} = require('../service');
+const {errorStatuses} = require('../errors');
+const {ActionToken, Oauth, User} = require('../dataBase');
+const {emailActionEnum} = require('../configs');
 
 module.exports = {
     login: async (req, res, next) => {
         try {
-            const { user } = req;
+            const { userById } = req;
 
             const tokenPair = jwtService.generateTokenPair();
 
-            const userNormalized = userNormalizator(user);
+            const userNormalized = userNormalizator(userById);
 
-            await O_Auth.create({
+            await Oauth.create({
                 ...tokenPair,
-                user_id: userNormalized._id
+                user: userById._id
             });
-
-            await emailService.sendMail(user.email, LOGIN, user);
 
             res.json({
                 user: userNormalized,
@@ -30,28 +29,86 @@ module.exports = {
 
     logout: async ( req, res, next ) => {
         try {
-            const user = req.user;
-            const token = req.token;
+            const {userByID} = req;
 
-            await O_Auth.deleteOne({ access_token: token });
+            await Oauth.deleteOne({ user: userByID._id });
 
-            await emailService.sendMail(user.email, LOGOUT, user);
-
-            res.json('Logout successfully');
+            res.sendStatus(errorStatuses.status_205);
         } catch (e) {
             next(e);
         }
     },
 
-    logoutAllDevices: async ( req, res, next ) => {
+    refresh: async (req, res, next) => {
         try {
-            const userSingIn = req.user;
+            const {userByID} = req;
 
-            await O_Auth.deleteMany({ user_id: userSingIn._id });
+            const tokenPair = jwtService.generateTokenPair();
 
-            res.json('Logout All Devices success');
-        } catch (e) {
-            next(e);
+            await Oauth.create({
+                ...tokenPair,
+                user: userByID._id
+            });
+
+            res.json({
+                user: userByID,
+                ...tokenPair
+            });
+        } catch (err) {
+            next(err);
         }
     },
+
+    forgotPassword: async (req, res, next) => {
+        try {
+            const {userByID: {_id, name, email}} = req;
+
+            const actionToken = await jwtService.generateTokenAction();
+
+            await ActionToken.create({
+                actionToken,
+                user: _id
+            });
+
+            const forgotPasswordLink= `http://localhost:5000/auth/forgot-password/${actionToken}`;
+
+            await emailService.sendMail(
+                email,
+                emailActionEnum.FORGOT_PASSWORD,
+                {
+                    userName: name,
+                    link: forgotPasswordLink
+                }
+            );
+
+            res.sendStatus(errorStatuses.status_201);
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    changePassword: async (req, res, next) => {
+        try {
+            const {body: {password}, userByID: {_id, name, email}} = req;
+
+            const hashedPassword = await passwordService.hash(password);
+
+            await Oauth.deleteMany({user: _id});
+
+            await User.updateOne(
+                {_id},
+                {password: hashedPassword}
+            );
+
+            await emailService.sendMail(
+                email,
+                emailActionEnum.CHANGE_PASSWORD,
+                {userName: name}
+            );
+
+            res.sendStatus(errorStatuses.status_201);
+        } catch (err) {
+            next(err);
+        }
+    }
 };

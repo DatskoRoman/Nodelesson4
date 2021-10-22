@@ -15,6 +15,7 @@ const createUserValidator = Joi.object({
     email: Joi
         .string()
         .regex(EMAIL_REGEXP)
+        .lowercase()
         .trim()
         .required(),
 
@@ -23,6 +24,7 @@ const createUserValidator = Joi.object({
     password: Joi
         .string()
         .regex(PASSWORD_REGEXP)
+        .min(6)
         .required(),
 });
 

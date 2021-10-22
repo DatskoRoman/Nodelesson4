@@ -1,20 +1,23 @@
-const {findUserById, findByEmail} = require('../service/userService');
-const {createUserValidator, updateUserValidator} = require('../validators/user.validator');
-const {ErrorHandler} = require('../errors');
-const {FORBIDDEN, notValidBody, notFoundById} = require('../errors/dev-errors');
+const {errorMessages, errorStatuses} = require('../errors/index');
+const {User} = require('../dataBase/index');
+const {userValidator} = require('../validators');
+const ErrorHandler = require('../errors/ErrorHandler');
 
 module.exports = {
-    userById: async (req, res, next) => {
+    isUserExist: async (req, res, next) => {
         try {
-            const {user_id} = req.params;
+            const {params: {userId}} = req;
 
-            const user = await findUserById(user_id).lean();
+            const userById = await User.findById(userId);
 
-            if (!user) {
-                throw new ErrorHandler(notFoundById.message, notFoundById.code);
+            if (!userById) {
+                return next({
+                    message: errorMessages.USER_ID_DOESNT_EXIST,
+                    status: errorStatuses.status_404
+                });
             }
 
-            req.userById() = user;
+            req.userById = userById;
 
             next();
         } catch (e) {
@@ -22,64 +25,63 @@ module.exports = {
         }
     },
 
-    checkUniqueEmail: async (req, res, next) => {
+    isUserEmailExist: async (req, res, next) => {
         try {
+            const {body: {email}} = req;
 
-            const userEmail = await findByEmail({ email: req.body.email })
-                .select('+password')
-                .lean();
+            const userEmail = await User.findOne({email});
 
-            if (!userEmail) {
-                throw new ErrorHandler(notValidBody.message, notValidBody.code);
+            if (userEmail) {
+                return next({
+                    message: errorMessages.USER_EMAIL_ALREADY_EXISTS,
+                    status: errorStatuses.status_409
+                });
             }
-
-            req.user = userEmail;
 
             next();
         } catch (e) {
             next(e);
         }
     },
-
-    validateUser: (req, res, next) => {
+    isUserRolesChecked: (roles = []) => (req, res, next) => {
         try {
-            const {error} = createUserValidator.validate(req.body);
+            const {userById: {role}} = req;
+
+            if (!roles.includes(role)) {
+                return next({
+                    message: errorMessages.ACCESS_DENIED,
+                    status: errorStatuses.status_403
+                });
+            }
+
+            next();
+        } catch (e) {
+            next(e);
+        }
+    },
+    isBodyValid: (validator, authKey = 0) => (req, res, next) => {
+        try {
+            const {body} = req;
+
+            const {error} = validator.validate(body);
+
+            if (authKey && error) {
+                return next({
+                    message: errorMessages.WRONG_EMAIL_OR_PASSWORD,
+                    status: errorStatuses.status_400
+                });
+            }
 
             if (error) {
-                throw new ErrorHandler(notValidBody.message, notValidBody.code);
+                return next({
+                    message: error.details[0].message,
+                    status: errorStatuses.status_400
+                });
             }
 
             next();
-        } catch (e) {
-            next(e);
-        }
-    },
-
-    validateUserToUpdate: (req, res, next) => {
-        try {
-            const {error} = updateUserValidator.validate(req.body);
-
-            if (error) {
-                throw new ErrorHandler(notValidBody.message, notValidBody.code);
-            }
-
-            next();
-        } catch (e) {
-            next(e);
-        }
-    },
-
-    checkUserRole: (roleArr = []) => (req, res, next) => {
-        try {
-            const {role} = req.user;
-
-            if (!roleArr.includes(role)) {
-                throw new ErrorHandler(FORBIDDEN.message, FORBIDDEN.code);
-            }
-
-            next();
-        } catch (e) {
-            next(e);
+        } catch (err) {
+            next(err);
         }
     }
 };

@@ -1,8 +1,7 @@
 module.exports = {
-    WELCOME: 'welcome',
-    USER_BLOCKED: 'userBlocked',
-    ORDER_CONFIRMED: 'orderConfirmed',
-    LOGIN: 'login',
-    LOGOUT: 'logout',
-    UPDATE: 'update'
+    CHANGE_PASSWORD: 'changePassword',
+    FORGOT_PASSWORD: 'forgotPassword',
+    USER_WAS_DELETED: 'userWasDeleted',
+    USER_WAS_REGISTERED: 'userWasRegistered'
 };
+

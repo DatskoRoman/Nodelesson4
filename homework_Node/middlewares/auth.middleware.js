@@ -1,50 +1,41 @@
-const {login} = require('../validators/auth.validator');
-const {findByEmail} = require('../service/userService');
-const {ErrorHandler} = require('../errors');
-const {notValidBody, badRequest} = require('../errors/dev-errors');
+const {User, Oauth, ActionToken} = require('../dataBase/index');
+const {errorMessages, errorStatuses} = require('../errors');
+const {passwordService, jwtService} = require('../service');
 const {AUTHORIZATION} = require('../configs/constants');
-const O_Auth = require('../dataBase/O_Auth');
-const tokenTypeEnum = require('../configs/token-type.enum');
-const {jwtService, passwordService} = require('../service');
+const {tokenTypeEnum} = require('../configs');
+
 
 module.exports = {
-    userValidate: (req, res, next) => {
+    isEmailExist: async (req, res, next) => {
         try {
-            const {error} = login.validate(req.body);
+            const {body: {email}} = req;
 
-            if (error) {
-                throw new ErrorHandler(notValidBody.message, notValidBody.code);
+            const userById = await User.findOne({email})
+                .select('+password')
+                .lean();
+
+            if (!userById) {
+                next({
+                    message: errorMessages.WRONG_EMAIL_OR_PASSWORD,
+                    status: errorStatuses.status_400
+                });
+
+                return;
             }
+
+            req.userById = userById;
 
             next();
         } catch (e) {
-            res.json(e.message);
+            next(e);
         }
     },
 
-    emailExist: async (req, res, next) => {
+    isPasswordMatched: async (req, res, next) => {
         try {
-            const {email} = req.body;
+            const {body, userById} = req;
 
-            const userEmail = await findByEmail(email);
-
-            if (!userEmail) {
-                throw new ErrorHandler(badRequest.message, badRequest.code);
-            }
-
-            req.user = userEmail;
-            next();
-        } catch (e) {
-            res.json(e.message);
-        }
-    },
-
-    isPasswordsMatched: async (req, res, next) => {
-        try {
-            const { password } = req.body;
-            const { password: hashPassword } = req.user;
-
-            await passwordService.compare(password, hashPassword);
+            await passwordService.compare(body.password, userById.password);
 
             next();
         } catch (e) {
@@ -57,20 +48,26 @@ module.exports = {
             const token = req.get(AUTHORIZATION);
 
             if (!token) {
-                throw new ErrorHandler('No token', 401);
+                return next({
+                    message: errorMessages.INVALID_TOKEN,
+                    status: errorStatuses.status_401
+                });
             }
 
-            await jwtService.verifyToken(token);
+            jwtService.verifyToken(token, tokenTypeEnum.ACCESS);
 
-            const tokenResponse = await O_Auth
-                .findOne({ access_token: token })
-                .populate('user_id');
+            const foundO_Auth = await Oauth
+                .findOne({token_access: token})
+                .populate('user');
 
-            if (!tokenResponse) {
-                throw new ErrorHandler('Invalid token', 401);
+            if (!foundO_Auth) {
+                return next({
+                    message: errorMessages.INVALID_TOKEN,
+                    status: errorStatuses.status_401
+                });
             }
 
-            req.user = tokenResponse.user_id;
+            req.userById = foundO_Auth.user;
 
             next();
         } catch (e) {
@@ -83,26 +80,66 @@ module.exports = {
             const token = req.get(AUTHORIZATION);
 
             if (!token) {
-                throw new ErrorHandler('No token', 401);
+                return next({
+                    message: errorMessages.INVALID_TOKEN,
+                    status: errorStatuses.status_401
+                });
             }
 
-            await jwtService.verifyToken(token, tokenTypeEnum.REFRESH);
+            jwtService.verifyToken(token, tokenTypeEnum.REFRESH);
 
-            const tokenResponse = await O_Auth
-                .findOne({refresh_token: token})
-                .populate('user_id');
+            const foundO_Auth = await Oauth
+                .findOne({token_refresh: token})
+                .populate('user');
 
-            if (!tokenResponse) {
-                throw new ErrorHandler('Invalid token', 401);
+            if (!foundO_Auth) {
+                return next({
+                    message: errorMessages.INVALID_TOKEN,
+                    status: errorStatuses.status_401
+                });
             }
 
-            await O_Auth.remove({refresh_token: token});
+            await Oauth.deleteOne({token_refresh: token});
 
-            req.user = tokenResponse.user_id;
+            req.userById = foundO_Auth.user;
 
             next();
         } catch (e) {
             next(e);
         }
     },
+
+    checkActionToken: async (req, res, next) => {
+        try {
+            const token = req.get(AUTHORIZATION);
+
+            if (!token) {
+                return next({
+                    message: errorMessages.INVALID_TOKEN,
+                    status: errorStatuses.status_401
+                });
+            }
+
+            jwtService.verifyToken(token, tokenTypeEnum.ACTION);
+
+            const foundActionToken = await ActionToken
+                .findOne({token_action: token})
+                .populate('user');
+
+            if (!foundActionToken) {
+                return next({
+                    message: errorMessages.INVALID_TOKEN,
+                    status: errorStatuses.status_401
+                });
+            }
+
+            await ActionToken.deleteOne({token_action: token});
+
+            req.userById = foundActionToken.user;
+
+            next();
+        } catch (e) {
+            next(e);
+        }
+    }
 };

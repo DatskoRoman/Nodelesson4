@@ -2,16 +2,17 @@ const User = require('../dataBase/User');
 const passwordService = require('../service/password.service');
 const userUtil = require('../util/user.util');
 const {emailService} = require('../service');
-const {WELCOME} = require('../configs/email-action.enum');
+const {emailActionEnum} = require('../configs');
+const {errorStatuses} = require('../errors');
+const {Oauth} = require('../dataBase');
 
 
 module.exports = {
     getUsers: async (req, res, next) => {
         try {
-            const users = await User.find().lean();
-            const usersNormalize = users.map((user) => userUtil.userNormalizator(user));
+            const userById = await User.find().lean();
 
-            res.json(usersNormalize);
+            res.json(userById);
         } catch (e) {
             next(e);
         }
@@ -19,40 +20,9 @@ module.exports = {
 
     getUserById: (req, res, next) => {
         try {
-            const user = req.user;
-            const utilUser = userUtil.userNormalizator(user);
+            const {userById} = req;
 
-            res.json(utilUser);
-        } catch (e) {
-            next(e);
-        }
-    },
-
-    deleteUser: async (req, res, next) => {
-        try {
-            const {user_id} = req.params;
-            let deletedUser = await User.findByIdAndDelete(user_id).lean();
-            deletedUser = userUtil.userNormalizator(deletedUser);
-
-            res.json(deletedUser);
-        } catch (e) {
-            next(e);
-        }
-    },
-
-    createUser: async (req, res, next) => {
-        try {
-            const newUser = req.body;
-
-            const hashedPassword = await passwordService.hash(newUser.password);
-
-            const user = await User.create({ ...newUser, password: hashedPassword });
-
-            const utilUser = userUtil.userNormalizator(user.toObject());
-
-            await emailService.sendMail(newUser.email, WELCOME, utilUser);
-
-            res.end(`User ${utilUser} is added`);
+            res.json(userById);
         } catch (e) {
             next(e);
         }
@@ -60,11 +30,51 @@ module.exports = {
 
     updateUser: async (req, res, next) => {
         try {
-            const {user_id} = req.params;
-            let user = await User.findByIdAndUpdate(user_id, req.body);
-            user = userUtil.userNormalizator(user);
+            const {params: {userId}, body} = req;
 
-            res.json(user);
+            const updatedUser = await User.findByIdAndUpdate(userId, body,
+                {new: true, runValidators: true}
+            );
+
+            res
+                .status(errorStatuses.status_201)
+                .json(updatedUser);
+        } catch (e) {
+            next(e);
+        }
+    },
+    deleteUser: async (req, res, next) => {
+        try {
+            const {params: {userId}, userById: {name, email}} = req;
+
+            await User.deleteOne({user: userId});
+            Oauth.deleteOne({user: userId});
+
+            await emailService.sendMail(
+                email,
+                emailActionEnum.USER_WAS_DELETED,
+                {userName: name}
+            );
+
+            res.sendStatus(errorStatuses.status_204);
+        } catch (e) {
+            next(e);
+        }
+    },
+
+    createUser: async (req, res, next) => {
+        try {
+            const {body, body: {name, email, password}} = req;
+
+            const hashedPassword = await passwordService.hash(password);
+
+            const createdUser = await User.create({ ...body, password: hashedPassword });
+
+            const utilUser = userUtil.userNormalizator(createdUser.toObject());
+
+            await emailService.sendMail(email, emailActionEnum.USER_WAS_REGISTERED, {userName: name});
+
+            res.status(errorStatuses.status_201).json(utilUser);
         } catch (e) {
             next(e);
         }

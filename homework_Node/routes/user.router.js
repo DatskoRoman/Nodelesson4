@@ -1,22 +1,36 @@
-const router = require('express')
-    .Router();
+const router = require('express').Router();
 
-const userMiddleware = require('../middlewares/user.middleware');
-const {userRoles} = require('../configs');
+const {userValidator} = require('../validators');
+const {authMiddleware, userMiddleware} = require('../middlewares');
+const {userRoles} = require('../configs/index');
 const {userController} = require('../controllers');
 
 router.get('/', userController.getUsers);
 
-router.post('/', userMiddleware.validateUser, userMiddleware.checkUniqueEmail, userController.createUser);
+router.post(
+    '/',
+    userMiddleware.isBodyValid(userValidator),
+    userMiddleware.isUserEmailExist,
+    userController.createUser
+);
 
-router.get('/:user_id', userMiddleware.userById, userController.getUserById);
-
-router.put('/:user_id', userMiddleware.validateUserToUpdate, userMiddleware.userById, userController.updateUser);
-
-router.delete('/:user_id', userMiddleware.userById, userController.deleteUser,
-    userMiddleware.checkUserRole([
-        userRoles.USER,
-        userRoles.ADMIN
-    ]));
+router.get(
+    '/:userId',
+    userMiddleware.isUserExist,
+    userController.getUserById
+);
+router.put(
+    '/:userId',
+    userMiddleware.isBodyValid(userValidator),
+    authMiddleware.checkAccessToken,
+    userMiddleware.isUserExist,
+    userController.updateUser
+);
+router.delete(
+    '/:userId',
+    authMiddleware.checkAccessToken,
+    userMiddleware.isUserRolesChecked([userRoles.ADMIN]),
+    userController.deleteUser
+);
 
 module.exports = router;

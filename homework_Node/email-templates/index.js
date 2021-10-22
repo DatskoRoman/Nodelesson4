@@ -1,16 +1,24 @@
-const emailActionsEnum = require('../configs/email-action.enum');
+const emailActions = require('../configs/email-action.enum');
+
 
 module.exports = {
-    [emailActionsEnum.WELCOME]: {
-        templateName: 'welcome',
-        subject: 'Welcome !!'
+    [emailActions.CHANGE_PASSWORD]: {
+        templateName: 'change-password',
+        subject: 'Change password!!!'
     },
-    [emailActionsEnum.ORDER_CONFIRMED]: {
-        templateName: 'order-confirmed',
-        subject: 'Cool!'
+
+    [emailActions.FORGOT_PASSWORD]: {
+        templateName: 'forgot-password',
+        subject: 'Forgot password!!!'
     },
-    [emailActionsEnum.USER_BLOCKED]: {
-        templateName: 'us-b',
-        subject: 'oops'
+
+    [emailActions.USER_WAS_DELETED]: {
+        templateName: 'user-was-deleted',
+        subject: 'Deleted'
+    },
+
+    [emailActions.USER_WAS_REGISTERED]: {
+        templateName: 'user-was-registered',
+        subject: 'Registered'
     }
 };

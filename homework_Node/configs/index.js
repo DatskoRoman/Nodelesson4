@@ -3,5 +3,6 @@ module.exports = {
     constants: require('./constants'),
     userRoles: require('./user-roles.enum'),
     tokenTypeEnum: require ('./token-type.enum'),
-    emailActionEnum: require ('./email-action.enum')
+    emailActionEnum: require ('./email-action.enum'),
+    dataBaseName: require ('./dataBaseName.enum')
 };
