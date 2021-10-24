@@ -1,6 +1,7 @@
 const {model, Schema} = require('mongoose');
 
 const {userRole: {ADMIN, MANAGER, USER}} = require('../configs');
+const {passwordService} = require('../services');
 
 const User = new Schema({
     name: {
@@ -40,5 +41,20 @@ const User = new Schema({
         required:true
     }
 });
+
+User.statics = {
+    testStatic(msg) {
+        console.log('*******************');
+        console.log('TEST STATIC', msg);
+        console.log('TEST STATIC', msg);
+        console.log('*******************');
+    },
+
+    async createUserWithHashPassword(userObject) {
+        const hashedPassword = await passwordService.hash(userObject.password);
+
+        return this.create({ ...userObject, password: hashedPassword });
+    }
+};
 
 module.exports = model('user', User);
