@@ -1,14 +1,14 @@
-const {User, OAuth} = require('../dataBase');
-const {authValidators: {authValidator}} = require('../validators');
+const {User, OAuth, Action} = require('../dataBase');
 const {passwordService: {comparing}} = require('../services');
 const {messagesEnum, statusEnum, ErrorHandler: {ErrorHandler}} = require('../errors');
 const {jwtService} = require('../services');
 const {AUTHORIZATION} = require('../configs/constants');
+const {typeTokenEnum} = require('../configs');
 
 module.exports = {
-    isAuthValid: (req, res, next) => {
+    isAuthValid: (validator) =>(req, res, next) => {
         try {
-            const {error, value} = authValidator.validate(req.body);
+            const {error, value} = validator.validate(req.body);
 
             if (error) {
                 throw new ErrorHandler(error.details[0].message, 400);
@@ -44,8 +44,7 @@ module.exports = {
 
     checkingRole: (roleArr = []) => (req, res, next) => {
         try {
-
-            if (!roleArr.includes(req.body.role)) {
+            if (!roleArr.includes(req.role)) {
                 throw new ErrorHandler(messagesEnum.ACCESS_DENIED, statusEnum.FORBIDDEN);
             }
 
@@ -54,7 +53,6 @@ module.exports = {
             next(e);
         }
     },
-
     checkAccessToken: async (req, res, next) => {
         try {
             const token = req.get(AUTHORIZATION);
@@ -103,6 +101,50 @@ module.exports = {
         } catch (e) {
             next(e);
         }
-    }
+    },
+
+    checkActionToken: (type) => async (req, res, next) => {
+        try {
+            const token = req.get(AUTHORIZATION);
+
+            if (!token) {
+                throw new ErrorHandler(messagesEnum.ACCESS_DENIED, statusEnum.FORBIDDEN);
+            }
+
+            jwtService.verifyToken(token, typeTokenEnum.ACTION);
+
+            const tokenResponse = await Action.findOne({action_token: token, type}).populate('user_id');
+
+            if (!tokenResponse) {
+                throw new ErrorHandler(messagesEnum.INVALID_TOKEN, statusEnum.UNAUTHORIZED);
+            }
+
+            await Action.deleteOne({action_token: token, type});
+
+            req.user = tokenResponse.user_id;
+
+            next();
+        } catch (e) {
+            next(e);
+        }
+    },
+
+    checkExistUserByEmail: async (req, res, next) => {
+        try {
+            const {email} = req.body;
+
+            const user = await User.findOne({email});
+
+            if (!user) {
+                throw new ErrorHandler(messagesEnum.NOT_FOUND_USER, statusEnum.NO_FOUND);
+            }
+
+            req.body = user;
+
+            next();
+        } catch (e) {
+            next(e);
+        }
+    },
 };
 

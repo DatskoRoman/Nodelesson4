@@ -1,8 +1,8 @@
-const {OAuth} = require('../dataBase');
-const {User} = require('../dataBase');
+const {OAuth, User, Action} = require('../dataBase/index');
 const {emailActionEnum}=require('../configs');
 const {messagesEnum, statusEnum} = require('../errors');
-const {emailService,passwordService} = require('../services');
+const {emailService,passwordService, jwtService} = require('../services');
+const {ACTIVATE_USER} = require('../configs/action-token-type');
 
 module.exports = {
     getUsers: async (req, res) => {
@@ -31,11 +31,15 @@ module.exports = {
         try {
             const hashPas = await passwordService.hash(req.body.password);
 
-            await User.create({...req.body, password: hashPas});
+            const {user} = await User.create({...req.body, password: hashPas});
 
-            await emailService(req.body.email, emailActionEnum.WELCOME);
+            const actionToken = jwtService.createActionToken();
 
-            res.status(statusEnum.CREATED).json(messagesEnum.ADD_USER);
+            await Action.create({action_token: actionToken, type: ACTIVATE_USER, user_id: user._id});
+
+            await emailService(user.email, emailActionEnum.WELCOME, {userName: user.name, token: actionToken});
+
+            res.status(statusEnum.CREATED).json({user,actionToken});
         } catch (e) {
             res.json(e.message);
         }
@@ -49,6 +53,8 @@ module.exports = {
             
             await OAuth.deleteMany({user_id: user._id});
 
+            await emailService(user.email, emailActionEnum.DELETE, {userName: user.name});
+
             res.sendStatus(statusEnum.NO_CONTENT);
         } catch (e) {
             res.json(e.message);
@@ -57,7 +63,9 @@ module.exports = {
 
     updateUser: async (req, res) => {
         try {
-            await User.updateOne({_id: req.params.id}, {$set: {name: req.body.name}});
+            const newUser = await User.findOneAndUpdate({_id: req.params.id}, {$set: {name: req.body.name}});
+
+            await emailService(newUser.email, emailActionEnum.UPDATE, {userName: newUser.name});
 
             res.status(statusEnum.CREATED).json(messagesEnum.UPDATE_USER);
         } catch (e) {

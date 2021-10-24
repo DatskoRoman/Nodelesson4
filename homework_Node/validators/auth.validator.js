@@ -3,12 +3,14 @@ const Joi = require('joi');
 const {constants} = require('../configs');
 
 const authValidator = Joi.object({
-    email: Joi.string()
+    email: Joi
+        .string()
         .trim()
         .regex(constants.EMAIL_REGEXP)
         .required(),
 
-    password: Joi.string()
+    password: Joi
+        .string()
         .min(5)
         .max(10)
         .trim()

@@ -3,5 +3,6 @@ module.exports = {
     userRole: require('./users-role'),
     typeTokenEnum: require('./typeToken-enum'),
     emailActionEnum: require('./email-action-enum'),
-    config: require('./config')
+    config: require('./config'),
+    actionTokenType: require('./action-token-type')
 };
