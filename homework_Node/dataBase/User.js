@@ -1,48 +1,62 @@
-const {model, Schema} = require('mongoose');
+const {Schema, model} = require('mongoose');
 
-const {userRole: {ADMIN, MANAGER, USER}} = require('../configs');
 const {passwordService} = require('../services');
+const MD = require('./ModelDefinition');
+const userRoles = require('../configs/model-name-enum');
 
-const User = new Schema({
-    name: {
-        type: String,
-        trim: true,
-        required: true
-    },
-
-    email: {
-        type: String,
-        unique: true,
-        trim: true,
-        required: true
-    },
-
-    password: {
-        type: String,
-        trim: true,
-        required: true
-    },
-
+const userSchema = new Schema({
+    ...MD.NEP,
     role: {
         type: String,
-        trim: true,
-        required: true,
-        default: 'user',
-        enum: [
-            ADMIN,
-            MANAGER,
-            USER
-        ]
+        default: userRoles.USER,
+        enum: Object.values(userRoles)
     },
-
-    is_active: {
-        type: Boolean,
-        default: false,
-        required:true
+    age: {
+        type: Number,
     }
-});
+}, MD.gentelmenClub);
 
-User.statics = {
+
+// const userSchema = new Schema({
+//     name: {
+//         type: String,
+//         trim: true,
+//         required: true
+//     },
+//
+//     email: {
+//         type: String,
+//         unique: true,
+//         trim: true,
+//         required: true
+//     },
+//
+//     password: {
+//         type: String,
+//         trim: true,
+//         required: true
+//     },
+//
+//     role: {
+//         type: String,
+//         trim: true,
+//         required: true,
+//         default: 'user',
+//         enum: [
+//             ADMIN,
+//             MANAGER,
+//             USER
+//         ]
+//     },
+//
+//     is_active: {
+//         type: Boolean,
+//         default: false,
+//         required:true
+//     }
+// });
+
+userSchema.statics = {
     testStatic(msg) {
         console.log('*******************');
         console.log('TEST STATIC', msg);
@@ -57,4 +71,4 @@ User.statics = {
     }
 };
 
-module.exports = model('user', User);
+module.exports = model('user', userSchema);

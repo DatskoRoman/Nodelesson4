@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const swaggerUI = require('swagger-ui-express');
 
 require('dotenv').config();
 
@@ -10,6 +11,8 @@ const {MONGO_CONNECT_URL, PORT, ALLOWED_ORIGIN, NODE_ENV} = require('./configs/c
 const startCron = require('./cron');
 const {authRouter, userRouter} = require('./routers');
 const {GENERIC_ERROR}=require('./errors/status-enum');
+const checkDefaultData = require('./util/default-data.util');
+const swaggerJson = require('./docs/swagger.json');
 
 const app = express();
 
@@ -31,6 +34,7 @@ if (NODE_ENV === 'dev') {
 app.use(express.json());
 app.use(express.urlencoded());
 
+app.use('/docs', swaggerUI.serve, swaggerUI.setup(swaggerJson));
 app.use('/users', userRouter);
 app.use('/auth', authRouter);
 
@@ -43,6 +47,7 @@ app.use('*', (err, req, res, next) => {
 
 app.listen(PORT, () => {
     console.log(`App listen ${PORT}`);
+    checkDefaultData();
     startCron();
 });
 
