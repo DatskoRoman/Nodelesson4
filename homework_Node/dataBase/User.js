@@ -58,10 +58,10 @@ const userSchema = new Schema({
 
 userSchema.statics = {
     testStatic(msg) {
-        console.log('*******************');
+        console.log('******************');
         console.log('TEST STATIC', msg);
         console.log('TEST STATIC', msg);
-        console.log('*******************');
+        console.log('******************');
     },
 
     async createUserWithHashPassword(userObject) {
