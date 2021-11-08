@@ -1,6 +1,6 @@
 const {model, Schema} = require('mongoose');
 
-const Action = new Schema({
+const ActionSchema = new Schema({
     action_token: {
         type: String,
         trim: true,
@@ -18,7 +18,8 @@ const Action = new Schema({
         type: String,
         trim: true,
         required: true
-    }
+    },
+    timestamps: true
 });
 
-module.exports = model('action', Action);
+module.exports = model('action', ActionSchema);

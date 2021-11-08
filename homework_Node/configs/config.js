@@ -1,6 +1,8 @@
 module.exports = {
     NODE_ENV: process.env.NODE_ENV || 'dev',
 
+    ADMIN_PASSWORD:'qwerty12345%',
+
     MONGO_CONNECT_URL: process.env.MONGO_CONNECT_URL || 'mongodb://localhost:27017/june-2021',
     PORT: process.env.PORT || '5000',
 

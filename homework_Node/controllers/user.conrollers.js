@@ -3,11 +3,12 @@ const {emailActionEnum}=require('../configs');
 const {messagesEnum, statusEnum} = require('../errors');
 const {emailService,passwordService, jwtService} = require('../services');
 const {ACTIVATE_USER} = require('../configs/action-token-type');
+const {getAllUsers} = require('../services/user.service');
 
 module.exports = {
     getUsers: async (req, res) => {
         try {
-            const users = await User.find({})
+            const users = await getAllUsers(req.query)
                 .lean()
                 .select('-password');
 

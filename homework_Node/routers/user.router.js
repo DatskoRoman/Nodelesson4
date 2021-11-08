@@ -3,7 +3,7 @@ const router = require('express').Router();
 const {userMiddleware, authMiddleware} = require('../middlewares');
 const {userControllers} = require('../controllers');
 const {userValidators: {createUserValidator, updateUserValidator}} = require('../validators');
-const {userRole: {ADMIN, MANAGER}} = require('../configs');
+const {USER} = require("../configs/index");
 
 router.get('/', userControllers.getUsers);
 
@@ -28,10 +28,7 @@ router.delete('/:id',
     userMiddleware.isUserIdValid,
     authMiddleware.checkAccessToken,
     userMiddleware.checkExistUser,
-    authMiddleware.checkingRole([
-        ADMIN,
-        MANAGER
-    ]),
+    authMiddleware.checkingRole([USER]),
     userControllers.deleteUser);
 
 module.exports = router;

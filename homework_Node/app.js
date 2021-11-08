@@ -11,8 +11,8 @@ const {MONGO_CONNECT_URL, PORT, ALLOWED_ORIGIN, NODE_ENV} = require('./configs/c
 const startCron = require('./cron');
 const {authRouter, userRouter} = require('./routers');
 const {GENERIC_ERROR}=require('./errors/status-enum');
-const checkDefaultData = require('./util/default-data.util');
 const swaggerJson = require('./docs/swagger.json');
+const {checkDefaultData} = require("./util");
 
 const app = express();
 
@@ -54,7 +54,7 @@ app.listen(PORT, () => {
 
 function _configureCors(origin, callback) {
     if (NODE_ENV === 'dev') {
-        return callback(null, true);
+        return callback(0, true);
     }
 
     const whiteList = ALLOWED_ORIGIN.split(';');
